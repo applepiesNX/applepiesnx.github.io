@@ -13,7 +13,7 @@
 		<link href="https://applepiesnx.github.io/blog/os-part-1/" type="text/html"/>
 		<id>https://applepiesnx.github.io/blog/os-part-1/</id>
 		<content type="html">&lt;p&gt;Welcome to part 1 of this blog series that will focus on creating an operating system kernel purely in rust.
-This project was started as a means to deepen my knowledge of both Rust and operating system internals.&lt;&#x2F;p&gt;
+This project was started as a means to deepen my knowledge of both Rust and operating system internals. The project can be found on &lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;applepiesNX&#x2F;uefi-bootloader-rust&quot;&gt;github&lt;&#x2F;a&gt;.&lt;&#x2F;p&gt;
 &lt;h1 id=&quot;introduction&quot;&gt;Introduction&lt;&#x2F;h1&gt;
 &lt;p&gt;Before we begin creating our kernel, we need to first make a few design decisions like what architecture
 we are targeting and how our kernel will be booted. The present guide will focus on creating a kernel
