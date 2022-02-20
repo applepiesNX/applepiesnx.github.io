@@ -308,7 +308,7 @@
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
             </svg>
-            <span class="ml-1">1425 words</span>
+            <span class="ml-1">1439 words</span>
           </span>
         </div>
       </div>
@@ -382,16 +382,16 @@
 
     <!-- Content -->
     <div id="page-content" class="text-bold mt-2">
-      <p>Welcome to part 1 of this blog series that will focus on creating a operating system kernel purely in rust.
+      <p>Welcome to part 1 of this blog series that will focus on creating an operating system kernel purely in rust.
 This project was started as a means to deepen my knowledge of both Rust and operating system internals.</p>
 <h1 id="introduction">Introduction</h1>
-<p>Before we begin creating our kernel we need to make a few design decisions like what architecture
+<p>Before we begin creating our kernel, we need to first make a few design decisions like what architecture
 we are targeting and how our kernel will be booted. The present guide will focus on creating a kernel
 targeting the x86_64 architecture. <br />
 As for booting there are many paths we can take such as using BIOS, UEFI or
 making our kernel multiboot2 compliant so that we can use any multiboot2 bootloader. Theres an argument
-to be made for each of them but to keep things short we will be using a systems UEFI firmware to boot
-our kernel. Therefore, the first step in creating our kernel will be to a write a UEFI bootloader in Rust.</p>
+to be made for each of them ,but to keep things short we will be using a systems built-in UEFI firmware to boot
+our kernel. Therefore, the first step in creating our operating system would be to a write an UEFI bootloader in Rust.</p>
 <h1 id="uefi-bootloader">UEFI Bootloader</h1>
 <p>The first step would be to simply use cargo to create a new rust project.</p>
 <pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>cargo new bootloader-rust
@@ -400,7 +400,7 @@ our kernel. Therefore, the first step in creating our kernel will be to a write 
 <p>In order to compile this project so that it can be executed by the  UEFI firmware, we need to tell cargo that we are building this project for a x86_64 uefi system that has no underlying operating system. By default cargo will compile the project to be run on the operating system and architecture that it is being built on. We can overwrite this behaviour by passing the <code>--target=TARGET</code> flag to cargo to specify which target we want to build for. Fortunately for us Rust has an inbuilt target that we can use to build our project to be run directly on the UEFI firmware. Rust also supports the creation of our own custom targets, however we will get to that in a later part when we are creating our kernel. For now, lets use the in-built <code> x86_64-unknown-uefi</code> target to compile our project. We will also need to use the nightly compiler as we need to use a few unstable features. If the nightly compiler is not install it can be installed with the following command:</p>
 <pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>rustup install nightly
 </span></code></pre>
-<p>So now with all that done, in order to build our bootloader we will run the following command:</p>
+<p>With the nightly compiler installed, In order to build our bootloader we will run the following command:</p>
 <pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>cargo +nightly build --target=x86_64-unknown-uefi
 </span></code></pre>
 <p>When we run this command we get the following error:</p>
@@ -410,18 +410,18 @@ our kernel. Therefore, the first step in creating our kernel will be to a write 
 </span><span>  = help: consider downloading the target with `rustup target add x86_64-unknown-uefi`
 </span><span>  = help: consider building the standard library from source with `cargo build -Zbuild-std`
 </span></code></pre>
-<p>This is because the std crate depends on the underlying operating system to provide various features such as memory allocation. But we do not have an underlying operating system to provide these services therefore we need to tell the compiler that we do not intend to use the std crate. We do this by adding <code>#![no_std]</code> to the beginning of our <code>main.rs</code> file. </p>
-<p>Now if we try to build it again we get a different error. Its a very similar error however, this time its complaining about the lack of the <code>core</code> and <code>compiler_builtins</code> crates. Unlike the <code>std</code> crate , we dont have an option of not using these crates as they are entire foundation the Rust language is built on. The reason these crates cant be found is becuase Rust does not provide precompiled binaries for the UEFI target. 
+<p>This is because Rust does not provide prebuilt binaries for the UEFI target .The <code>std</code> crate depends on the underlying operating system to provide various features such as memory allocation. But we do not have an underlying operating system to provide these services therefore we need to tell the compiler that we do not intend to use the std crate. We do this by adding <code>#![no_std]</code> to the beginning of our <code>main.rs</code> file. </p>
+<p>Now if we try to build it again we get a different error. Its a very similar error however, this time its complaining about the lack of the <code>core</code> and <code>compiler_builtins</code> crates. Unlike the <code>std</code> crate , we dont have an option of not using these crates as they are the entire foundation the Rust language is built on. The reason for this error is once again because Rust doesnt provide any precompiled binaries for the UEFI target.
 However, the nightly version of Rust does give us the option of compiling these crates on our own, and thats exactly what we'll be doing.</p>
 <p>In order to compile these crates ourselves, we must first acquire the source for libstd. The following command can be used to download the source:</p>
 <pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>rustup component add rust-src
 </span></code></pre>
-<p>once thats done we need to tell Cargo to use the unstable <code>build-std</code> feature to build the <code>core</code> and <code>compiler_builtins</code> crates. we do that by using the <code>-Z build-std</code> flag. Passing this flag will cause Cargo to implicitly build <code>core, std, alloc, and proc_macro</code> crates , however we will be specifying the exact crates we want to build by using the following syntax : <code>-Z build-std=&lt;crates to build&gt;</code>. With all that done our new build command looks like the following:</p>
+<p>Once thats done we need to tell Cargo to use the unstable <code>build-std</code> feature to build the <code>core</code> and <code>compiler_builtins</code> crates. we do that by using the <code>-Z build-std</code> flag. Passing this flag will cause Cargo to implicitly build <code>core, std, alloc, and proc_macro</code> crates , however we will be specifying the exact crates we want to build by using the following syntax : <code>-Z build-std=&lt;crates to build&gt;</code>. With all that done our new build command looks like the following:</p>
 <pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>cargo +nightly build -Z build-std=core,compiler_builtins --target=x86_64-unknown-uefi
 </span></code></pre>
 <p>Now we get two more new errors. The first is about the <code>println!</code> macro. This is to be expected as the  <code>println!</code> macro is provided by the <code>std</code> crate that we do not have access to. We can simply remove the macro from our code and the error should disappear. </p>
-<p>The second error we have is complaining about the lack of a panic_handler function. Looking at the Rust documentation, it says that this funciton defines what the program will do when it panics. This fucntionality is normally provided by the <code>std</code> crate. This means we will have to define our own panic handler if we want to compile our program.</p>
-<p>The panic handler function must have the following signature <code>fn(&amp;PanicInfo) -&gt; !</code>, and it needs to be marked with the <code>#[panic_handler]</code> attribute. Sounds easy enough so lets add it to our <code>main.rs</code> file. First we need to import the <code>PanicInfo</code> struct which is defined in the <code>core</code> crate. adding <code> use core::panic::PanicInfo;</code> to our file will take care of that. Next, we need to define a function with the above signature.</p>
+<p>The second error we have is complaining about the lack of a panic_handler function. Looking at the Rust documentation, it says that this funciton defines the behaviour of the program when it panics. This fucntionality is normally provided by the <code>std</code> crate. This means we will have to define our own panic handler if we want to compile our program.</p>
+<p>The panic handler function must have the following signature <code>fn(&amp;PanicInfo) -&gt; !</code>, and it needs to be marked with the <code>#[panic_handler]</code> attribute. Sounds easy enough so lets add it to our <code>main.rs</code> file. First we need to import the <code>PanicInfo</code> struct which is defined in the <code>core</code> crate. Adding <code> use core::panic::PanicInfo;</code> to our file will take care of that. Next, we need to define a function with the above signature.</p>
 <pre data-lang="Rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-Rust "><code class="language-Rust" data-lang="Rust"><span>#[</span><span style="color:#bf616a;">panic_handler</span><span>]
 </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">panic</span><span>(</span><span style="color:#bf616a;">_info</span><span>: &amp;PanicInfo) -&gt;!{
 </span><span>	</span><span style="color:#b48ead;">loop</span><span>{}
