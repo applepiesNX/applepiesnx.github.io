@@ -100,7 +100,7 @@ For the second issue, Rust allows us to specify which calling convention we want
 extern "[calling convention]" fn my_function()->!{}
 ```
 
-Fortunately for us Rust supports the calling convention used by the UEFI firmware. In order to use it we need to first add `#![feature(abi_efiapi)]` to our `main.rs` file. Next we need to edit our definition of the `efi_main` function and add `pub extern "efiapi" fn efi_main` to it. With all these changes made our main.rs file should now look like the following:
+Fortunately for us, Rust supports the calling convention used by the UEFI firmware. In order to use it we need to first add `#![feature(abi_efiapi)]` to our `main.rs` file. Next we need to edit our definition of the `efi_main` function and add `pub extern "efiapi" fn efi_main` to it. With all these changes made our main.rs file should now look like the following:
 
 
 ```Rust
@@ -118,7 +118,35 @@ fn panic(_info: &PanicInfo) ->!{
 	loop{}
 }
 ```
+Compiling it now results in a few linker errors. You may notice that in the error output the linker complains about undefined symbols, such as memcpy and memset. These are C library functions that Rust uses by default. Of course, our build target has no underlying system that can provide us these functions and therefore, the build fails. However, Rust contains its own implementations of these functions, but are disabled by default. In order to enable them, we need to add another flag to our build command.
+'''
+-Z build-std-features=compiler-builtins-mem
+'''
 
+Adding this to our build command, you might notice that its becoming quite long now. We can solve this by creating a config file that allows us to configure Cargo's behaviour when building our project. First create the `.cargo` directory. Then create the `config.toml` file. Within the config file add the following:
+```Toml
+[unstable]
+build-std-features = ["compiler-builtins-mem"]
+build-std = ["core", "compiler_builtins"]
+
+[build]
+target = "x86_64-unknown-uefi"
+```
+You'll notice that these are the arguments we passed through to Cargo via the commandline.
+At this point, the directory structure of the project should look like the following:
+```
+│ 
+├── .cargo
+│   └── config.toml
+├── Cargo.lock
+├── Cargo.toml
+└── src
+    └── main.rs
+```
+Now, we can compile our program by simply using:
+```
+cargo +nightly build
+```
 And Finally attempting to compile it results in no errors! :smiley:
 
 That all for part one. We have managed to create a basic UEFI app that we can build upon and turn into our bootloader. In the next part I will use the UEFI firmware's built in functions to print to the screen. 
